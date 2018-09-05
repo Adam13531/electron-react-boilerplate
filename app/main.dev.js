@@ -12,6 +12,11 @@
  */
 import { app, BrowserWindow } from 'electron';
 import MenuBuilder from './menu';
+import MidiWrapper from './mainprocess_src/midiwrapper';
+import KeyRecognizer from './mainprocess_src/keyrecognizer';
+
+const keyRecognizer = new KeyRecognizer();
+const midiWrapper = new MidiWrapper(keyRecognizer);
 
 let mainWindow = null;
 
@@ -77,7 +82,28 @@ app.on('ready', async () => {
     mainWindow.focus();
   });
 
+  // midiWrapper.addEventListener()
+  // Configure a callback.
+  // input.on('message', function(deltaTime, message) {
+  //   // The message is an array of numbers corresponding to the MIDI bytes:
+  //   //   [status, data1, data2]
+  //   // https://www.cs.cf.ac.uk/Dave/Multimedia/node158.html has some helpful
+  //   // information interpreting the messages.
+  //   //
+  //   // http://computermusicresource.com/MIDI.Commands.html
+  //   const [status, data1, data2] = message;
+  //   console.log('m:' + message + ' d:' + deltaTime);
+  //   mainWindow.webContents.send('midi', message, deltaTime);
+  //   if (status === 128 && data1 === 36) {
+  //     for (let i = 0; i < 15; i++) {
+  //       console.log(' ');
+  //     }
+  //   }
+
+  // });
+
   mainWindow.on('closed', () => {
+    midiWrapper.dispose();
     mainWindow = null;
   });
 
