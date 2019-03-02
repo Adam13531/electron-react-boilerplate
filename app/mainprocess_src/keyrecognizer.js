@@ -19,7 +19,13 @@ class KeyRecognizer {
      */
     this.keys = {};
 
-    this.velocityThreshold = 100;
+    this.velocityThreshold = 90;
+
+    /**
+     * When true, we are only in Numbers Mode for a single keypress. After that
+     * keypress, we enter Letters Mode regardless of where we came from.
+     */
+    this.temporarilyInNumbersMode = false;
 
     this.mode = Modes.LETTERS;
 
@@ -40,50 +46,97 @@ class KeyRecognizer {
 
   handleNumberInput = (data1, data2) => {
     const exceededVelocityThreshold = data2 > this.velocityThreshold;
+    const shiftIfExceededVelocity = exceededVelocityThreshold ? "shift":"none";
+    let handled = false;
 
     if (data1 === 43) {
-      robot.typeString(exceededVelocityThreshold ? '!' : 1);
-      return true;
+      robot.keyTap('1', shiftIfExceededVelocity);
+      handled = true;
+    }
+
+    // ;:
+    if (data1 === 44) {
+      exceededVelocityThreshold ? robot.keyTap(';', 'shift') : robot.keyTap(';');
+      handled = true;
     }
     if (data1 === 45) {
-      robot.typeString(exceededVelocityThreshold ? '@' : 2);
-      return true;
+      robot.keyTap('2', shiftIfExceededVelocity);
+      handled = true;
     }
     if (data1 === 47) {
-      robot.typeString(exceededVelocityThreshold ? '#' : 3);
-      return true;
+      robot.keyTap('3', shiftIfExceededVelocity);
+      handled = true;
     }
     if (data1 === 48) {
-      robot.typeString(exceededVelocityThreshold ? '$' : 4);
-      return true;
+      robot.keyTap('4', shiftIfExceededVelocity);
+      handled = true;
     }
     if (data1 === 50) {
-      robot.typeString(exceededVelocityThreshold ? '%' : 5);
-      return true;
+      robot.keyTap('5', shiftIfExceededVelocity);
+      handled = true;
+    }
+    if (data1 === 51) {
+      exceededVelocityThreshold ? robot.keyTap('\\') : robot.keyTap('/');
+      handled = true;
     }
 
     if (data1 === 60) {
-      robot.typeString(exceededVelocityThreshold ? '^' : 6);
-      return true;
+      robot.keyTap('6', shiftIfExceededVelocity);
+      handled = true;
     }
     if (data1 === 62) {
-      robot.typeString(exceededVelocityThreshold ? '&' : 7);
-      return true;
-    }
-    if (data1 === 64) {
-      robot.typeString(exceededVelocityThreshold ? '*' : 8);
-      return true;
-    }
-    if (data1 === 65) {
-      robot.typeString(exceededVelocityThreshold ? '(' : 9);
-      return true;
-    }
-    if (data1 === 67) {
-      robot.typeString(exceededVelocityThreshold ? ')' : 0);
-      return true;
+      robot.keyTap('7', shiftIfExceededVelocity);
+      handled = true;
     }
 
-    return false;
+    // |
+    if (data1 === 63) {
+      robot.keyTap('\\', 'shift');
+      handled = true;
+    }
+    if (data1 === 64) {
+      robot.keyTap('8', shiftIfExceededVelocity);
+      handled = true;
+    }
+    if (data1 === 65) {
+      robot.keyTap('9', shiftIfExceededVelocity);
+      handled = true;
+    }
+
+    // { }
+    if (data1 === 66) {
+      exceededVelocityThreshold ? robot.keyTap(']', 'shift') : robot.keyTap('[', 'shift');
+      handled = true;
+    }
+    if (data1 === 67) {
+      robot.keyTap('0', shiftIfExceededVelocity);
+      handled = true;
+    }
+    if (data1 === 68) {
+      exceededVelocityThreshold ? robot.keyTap(']') : robot.keyTap('[');
+      handled = true;
+    }
+    if (data1 === 69) {
+      robot.keyTap('-', shiftIfExceededVelocity);
+      handled = true;
+    }
+
+    // < >
+    if (data1 === 70) {
+      exceededVelocityThreshold ? robot.keyTap('.', 'shift') : robot.keyTap(',', 'shift');
+      handled = true;
+    }
+    if (data1 === 71) {
+      robot.keyTap('=', shiftIfExceededVelocity);
+      handled = true;
+    }
+
+    if (handled && this.temporarilyInNumbersMode) {
+      this.temporarilyInNumbersMode = false;
+      this.setMode(Modes.LETTERS);
+    }
+
+    return handled;
   };
 
   handleCommandInput = (data1, data2) => {
@@ -167,6 +220,11 @@ class KeyRecognizer {
   };
 
   handleLetterInput = (data1, data2) => {
+    if (data1 === 42) {
+      robot.keyTap('space');
+      return true;
+    }
+
     if (data1 === 43) {
       this.typeLetter('L', data2);
       return true;
@@ -323,7 +381,7 @@ class KeyRecognizer {
 
     // Because we're debouncing the handler for this, our latest key press may
     // be up to debounce_time in the past.
-    const NUM_MS_FOR_CHORD = 50;
+    const NUM_MS_FOR_CHORD = 25;
 
     const debounceAccommodationTime = curTime - newestKeyData.timePressed;
 
@@ -400,9 +458,12 @@ class KeyRecognizer {
       return false;
     }
 
+    const exceededVelocityThreshold = chordKeys[0].data2 > this.velocityThreshold || chordKeys[1].data2 > this.velocityThreshold;
+
     const interval = chordKeys[0].getIntervalTo(chordKeys[1]);
 
-    if (interval === 1 || interval === 2) {
+    // An interval of 24 is two whole octaves, which is where the pinkies naturally rest.
+    if (interval === 1 || interval === 2 || interval === 24) {
       // this.typeLetter(' ');
       robot.keyTap('space');
       // console.log('SPACE PRESSED');
@@ -417,7 +478,8 @@ class KeyRecognizer {
 
     if (interval === 5) {
       console.log(' COMMA PRESSED');
-      robot.keyTap(',');
+      // robot.keyTap(',');
+      robot.typeString(', ');
       return true;
     }
 
@@ -429,7 +491,8 @@ class KeyRecognizer {
 
     if (interval === 7) {
       console.log(' PERIOD PRESSED');
-      robot.keyTap('.');
+      robot.typeString('. ');
+      // robot.keyTap('.');
       return true;
     }
 
@@ -441,19 +504,30 @@ class KeyRecognizer {
 
     if (interval === 9) {
       console.log(' APOSTROPHE PRESSED');
-      robot.keyTap("'");
+      robot.keyTap("'", exceededVelocityThreshold ? 'shift' : 'none');
       return true;
     }
 
     if (interval === 10) {
       console.log(' ? PRESSED');
-      robot.typeString('?');
+      robot.keyTap('/', 'shift');
+      robot.typeString(' ');
       return true;
     }
 
     if (interval === 11) {
       console.log(' ! PRESSED');
-      robot.typeString('!');
+      robot.keyTap('1', 'shift');
+      robot.typeString(' ');
+
+      return true;
+    }
+
+    // An interval of 14 is a major 9th, which is where both pointer fingers naturally rest.
+    if (interval === 14) {
+      this.temporarilyInNumbersMode = true;
+      this.setMode(Modes.NUMBERS);
+      console.log('In Numbers Mode temporarily');
       return true;
     }
 
@@ -516,7 +590,26 @@ class KeyRecognizer {
       return;
     }
 
-    if (this.handleNonChord(chordKeys)) {
+    // If we didn't find a chord handler, then interpret all of the keys we
+    // collected as individual keys.
+    const unhandled = [];
+    if (_.size(chordKeys) > 1) {
+      console.log('Interpreting multiple chord keys as single keys chordKeys: ' + JSON.stringify(chordKeys, null, 2));
+    }
+
+    // Play them back from oldest to newest
+    const sortedKeys = _.orderBy(chordKeys, 'timePressed');
+    _.forEach(sortedKeys, (chordKey) => {
+      const handled = this.handleNonChord([chordKey]);
+      if (!handled) {
+        unhandled.push(chordKey);
+      }
+    })
+    // if (this.handleNonChord(chordKeys)) {
+    //   return;
+    // }
+
+    if (_.isEmpty(unhandled)) {
       return;
     }
 

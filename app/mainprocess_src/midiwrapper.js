@@ -12,7 +12,7 @@ class MidiWrapper {
 
     console.log('numPorts: ' + JSON.stringify(numPorts));
 
-    const portToGet = 0;
+    const portToGet = 1;
 
     // Get the name of a specified input port.
     const portName = this.input.getPortName(portToGet);
