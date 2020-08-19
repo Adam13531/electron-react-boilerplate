@@ -373,18 +373,6 @@ class KeyRecognizer {
     return _.head(sortedKeys);
   }
 
-  getSecondMostRecentKeyHeld() {
-    // The head of the array will be the oldest key
-    const sortedKeys = _.orderBy(this.keys, 'timePressed');
-
-    const numKeys = _.size(sortedKeys);
-    if (numKeys < 2) {
-      return null;
-    }
-
-    return sortedKeys[numKeys - 2];
-  }
-
   handleTriadQuality(chordKeys) {
     // Check for major triads
     if (_.size(chordKeys) !== 3) {
@@ -459,7 +447,6 @@ class KeyRecognizer {
 
     if (interval === 5) {
       console.log(' COMMA PRESSED');
-      // robot.keyTap(',');
       robot.typeString(', ');
       return true;
     }
@@ -473,7 +460,6 @@ class KeyRecognizer {
     if (interval === 7) {
       console.log(' PERIOD PRESSED');
       robot.typeString('. ');
-      // robot.keyTap('.');
       return true;
     }
 
@@ -579,11 +565,6 @@ class KeyRecognizer {
 
     const chordKeys = this.getChordKeys();
 
-    // this.printAllKeysPressed();
-    // console.log("chordKeys: " + JSON.stringify(chordKeys, null, 2));
-
-    // TODO: check for chords / intervals / keys and run their handlers
-    // accordingly based on the mode we're in
     if (this.isTemporarilyHandlingIntervalsAndChords()) {
       this.handleChord(chordKeys);
       return;
@@ -607,9 +588,6 @@ class KeyRecognizer {
         unhandled.push(chordKey);
       }
     });
-    // if (this.handleNonChord(chordKeys)) {
-    //   return;
-    // }
 
     if (_.isEmpty(unhandled)) {
       return;
@@ -618,12 +596,6 @@ class KeyRecognizer {
     console.log('Found NO handler for this');
     this.printAllKeysPressed();
     console.log('chordKeys: ' + JSON.stringify(chordKeys, null, 2));
-
-    // const secondMostRecentKeyHeld = this.getSecondMostRecentKeyHeld();
-
-    // console.log('In debounced function');
-
-    // this.getPenultimateKeyHeld();
   }
 
   addKeyData(keyData) {
@@ -642,11 +614,7 @@ class KeyRecognizer {
 
       this.handleKeyPress();
     } else if (status === MidiConstants.NOTE_OFF) {
-      // console.log(`You let go of: ${data1}`);
-
       delete this.keys[data1];
-
-      // this.printAllKeysPressed();
     } else {
       console.log(
         `status: ${status} data1: ${data1} data2: ${data2} deltaTime: ${deltaTime}`
