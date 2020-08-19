@@ -612,12 +612,6 @@ class KeyRecognizer {
         `status: ${status} data1: ${data1} data2: ${data2} deltaTime: ${deltaTime}`
       );
     }
-
-    if (status === MidiConstants.NOTE_OFF && data1 === 36) {
-      for (let i = 0; i < 15; ++i) {
-        console.log(' ');
-      }
-    }
   }
 }
 
