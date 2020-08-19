@@ -1,4 +1,4 @@
-import { MidiConstants } from './constants';
+import { MidiConstants, PianoKeyConstants } from './constants';
 import KeyData from './keydata';
 import _ from 'lodash';
 import robot from 'robotjs';
@@ -11,7 +11,7 @@ const Modes = {
 
 class KeyRecognizer {
   constructor() {
-    this.intervalModeKeyNumber = 41;
+    this.intervalModeKeyNumber = PianoKeyConstants.F2;
 
     /**
      * Keys: the "data1" property
@@ -91,39 +91,53 @@ class KeyRecognizer {
    * This just populates the key-mapping dictionary.
    */
   formPianoKeyToNumberMapping() {
-    this.pianoKeyToNumberMapping[51] = (vel, hasExceededVelocityThreshold) => {
+    this.pianoKeyToNumberMapping[PianoKeyConstants.DS3] = (
+      vel,
+      hasExceededVelocityThreshold
+    ) => {
       if (hasExceededVelocityThreshold) robot.keyTap('\\');
       else robot.keyTap('/');
     };
-    this.pianoKeyToNumberMapping[63] = (vel, hasExceededVelocityThreshold) =>
-      robot.keyTap('\\', 'shift');
-    this.pianoKeyToNumberMapping[66] = (vel, hasExceededVelocityThreshold) => {
+    this.pianoKeyToNumberMapping[PianoKeyConstants.DS4] = (
+      vel,
+      hasExceededVelocityThreshold
+    ) => robot.keyTap('\\', 'shift');
+    this.pianoKeyToNumberMapping[PianoKeyConstants.FS4] = (
+      vel,
+      hasExceededVelocityThreshold
+    ) => {
       if (hasExceededVelocityThreshold) robot.keyTap(']', 'shift');
       else robot.keyTap('[', 'shift');
     };
-    this.pianoKeyToNumberMapping[68] = (vel, hasExceededVelocityThreshold) => {
+    this.pianoKeyToNumberMapping[PianoKeyConstants.GS4] = (
+      vel,
+      hasExceededVelocityThreshold
+    ) => {
       if (hasExceededVelocityThreshold) robot.keyTap(']');
       else robot.keyTap('[');
     };
-    this.pianoKeyToNumberMapping[70] = (vel, hasExceededVelocityThreshold) => {
+    this.pianoKeyToNumberMapping[PianoKeyConstants.AS4] = (
+      vel,
+      hasExceededVelocityThreshold
+    ) => {
       if (hasExceededVelocityThreshold) robot.keyTap('.');
       else robot.keyTap(',');
     };
 
     const pianoKeyToNumberMap = {
-      43: '1',
-      44: ';',
-      45: '2',
-      47: '3',
-      48: '4',
-      50: '5',
-      60: '6',
-      62: '7',
-      64: '8',
-      65: '9',
-      67: '0',
-      69: '-',
-      71: '=',
+      [PianoKeyConstants.G2]: '1',
+      [PianoKeyConstants.GS2]: ';',
+      [PianoKeyConstants.A2]: '2',
+      [PianoKeyConstants.B2]: '3',
+      [PianoKeyConstants.C3]: '4',
+      [PianoKeyConstants.D3]: '5',
+      [PianoKeyConstants.C4]: '6',
+      [PianoKeyConstants.D4]: '7',
+      [PianoKeyConstants.E4]: '8',
+      [PianoKeyConstants.F4]: '9',
+      [PianoKeyConstants.G4]: '0',
+      [PianoKeyConstants.A4]: '-',
+      [PianoKeyConstants.B4]: '=',
     };
 
     _.forEach(pianoKeyToNumberMap, (number, pianoKeyNumber) => {
@@ -136,34 +150,56 @@ class KeyRecognizer {
   }
 
   formPianoKeyToCommandMapping() {
-    this.pianoKeyToCommandMapping[43] = () => robot.keyTap('down');
-    this.pianoKeyToCommandMapping[44] = () => robot.keyTap('up');
-    this.pianoKeyToCommandMapping[64] = () => robot.keyTap('z', 'control');
-    this.pianoKeyToCommandMapping[65] = () => robot.keyTap('y', 'control');
-    this.pianoKeyToCommandMapping[48] = (vel, hasExceededVelocityThreshold) => {
+    this.pianoKeyToCommandMapping[PianoKeyConstants.G2] = () =>
+      robot.keyTap('down');
+    this.pianoKeyToCommandMapping[PianoKeyConstants.GS2] = () =>
+      robot.keyTap('up');
+    this.pianoKeyToCommandMapping[PianoKeyConstants.E4] = () =>
+      robot.keyTap('z', 'control');
+    this.pianoKeyToCommandMapping[PianoKeyConstants.F4] = () =>
+      robot.keyTap('y', 'control');
+    this.pianoKeyToCommandMapping[PianoKeyConstants.C3] = (
+      vel,
+      hasExceededVelocityThreshold
+    ) => {
       if (hasExceededVelocityThreshold) {
         robot.keyTap('backspace', ['control', 'shift']);
       } else {
         robot.keyTap('home');
       }
     };
-    this.pianoKeyToCommandMapping[49] = (vel, hasExceededVelocityThreshold) => {
+    this.pianoKeyToCommandMapping[PianoKeyConstants.CS3] = (
+      vel,
+      hasExceededVelocityThreshold
+    ) => {
       if (hasExceededVelocityThreshold) robot.keyTap('backspace', 'control');
       else robot.keyTap('left', 'control');
     };
-    this.pianoKeyToCommandMapping[50] = (vel, hasExceededVelocityThreshold) => {
+    this.pianoKeyToCommandMapping[PianoKeyConstants.D3] = (
+      vel,
+      hasExceededVelocityThreshold
+    ) => {
       if (hasExceededVelocityThreshold) robot.keyTap('backspace');
       else robot.keyTap('left');
     };
-    this.pianoKeyToCommandMapping[60] = (vel, hasExceededVelocityThreshold) => {
+    this.pianoKeyToCommandMapping[PianoKeyConstants.C4] = (
+      vel,
+      hasExceededVelocityThreshold
+    ) => {
       if (hasExceededVelocityThreshold) robot.keyTap('delete');
       else robot.keyTap('right');
     };
-    this.pianoKeyToCommandMapping[61] = (vel, hasExceededVelocityThreshold) => {
+    this.pianoKeyToCommandMapping[PianoKeyConstants.CS4] = (
+      vel,
+      hasExceededVelocityThreshold
+    ) => {
       if (hasExceededVelocityThreshold) robot.keyTap('delete', 'control');
       else robot.keyTap('right', 'control');
     };
-    this.pianoKeyToCommandMapping[62] = (vel, hasExceededVelocityThreshold) => {
+    this.pianoKeyToCommandMapping[PianoKeyConstants.D4] = (
+      vel,
+      hasExceededVelocityThreshold
+    ) => {
       if (hasExceededVelocityThreshold) {
         robot.keyTap('delete', ['control', 'shift']);
       } else {
@@ -173,38 +209,42 @@ class KeyRecognizer {
   }
 
   formPianoKeyToLetterMapping() {
-    this.pianoKeyToLetterMapping[42] = (vel, hasExceededVelocityThreshold) =>
-      robot.keyTap('space');
-    this.pianoKeyToLetterMapping[69] = (vel, hasExceededVelocityThreshold) =>
-      robot.keyTap('backspace');
+    this.pianoKeyToLetterMapping[PianoKeyConstants.FS2] = (
+      vel,
+      hasExceededVelocityThreshold
+    ) => robot.keyTap('space');
+    this.pianoKeyToLetterMapping[PianoKeyConstants.A4] = (
+      vel,
+      hasExceededVelocityThreshold
+    ) => robot.keyTap('backspace');
 
     const pianoKeyToLetterMap = {
-      43: 'L',
-      44: 'P',
-      45: 'R',
-      46: 'M',
-      47: 'N',
-      48: 'O',
-      49: 'C',
-      50: 'T',
-      51: 'W',
-      52: 'B',
-      53: 'K',
-      54: 'J',
-      55: 'Q',
-      56: 'X',
-      57: 'Z',
-      58: 'Y',
-      59: 'G',
-      60: 'E',
-      61: 'D',
-      62: 'A',
-      63: 'U',
-      64: 'I',
-      65: 'S',
-      66: 'F',
-      67: 'H',
-      68: 'V',
+      [PianoKeyConstants.G2]: 'L',
+      [PianoKeyConstants.GS2]: 'P',
+      [PianoKeyConstants.A2]: 'R',
+      [PianoKeyConstants.AS2]: 'M',
+      [PianoKeyConstants.B2]: 'N',
+      [PianoKeyConstants.C3]: 'O',
+      [PianoKeyConstants.CS3]: 'C',
+      [PianoKeyConstants.D3]: 'T',
+      [PianoKeyConstants.DS3]: 'W',
+      [PianoKeyConstants.E3]: 'B',
+      [PianoKeyConstants.F3]: 'K',
+      [PianoKeyConstants.FS3]: 'J',
+      [PianoKeyConstants.G3]: 'Q',
+      [PianoKeyConstants.GS3]: 'X',
+      [PianoKeyConstants.A3]: 'Z',
+      [PianoKeyConstants.AS3]: 'Y',
+      [PianoKeyConstants.B3]: 'G',
+      [PianoKeyConstants.C4]: 'E',
+      [PianoKeyConstants.CS4]: 'D',
+      [PianoKeyConstants.D4]: 'A',
+      [PianoKeyConstants.DS4]: 'U',
+      [PianoKeyConstants.E4]: 'I',
+      [PianoKeyConstants.F4]: 'S',
+      [PianoKeyConstants.FS4]: 'F',
+      [PianoKeyConstants.G4]: 'H',
+      [PianoKeyConstants.GS4]: 'V',
     };
 
     _.forEach(pianoKeyToLetterMap, (letter, pianoKeyNumber) => {
@@ -217,7 +257,7 @@ class KeyRecognizer {
 
   hasExceededVelocityThreshold = (data1, data2) => {
     let threshold = this.velocityThreshold;
-    if (data1 === 47) {
+    if (data1 === PianoKeyConstants.B2) {
       threshold += this.additionalVelocityThreshold;
     }
 
