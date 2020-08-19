@@ -49,11 +49,170 @@ class KeyRecognizer {
       [Modes.NUMBERS]: this.handleNumberInput,
     };
 
+    /**
+     * The keys of this object are the piano key numbers. The values are
+     * handlers for those keys. This is populated by
+     * formPianoKeyToLetterMapping.
+     *
+     * The functions will get two arguments: velocity (number) and
+     * hasExceededVelocityThreshold (boolean).
+     * @type {Object<string, Function>}
+     * @see formPianoKeyToLetterMapping
+     */
+    this.pianoKeyToLetterMapping = {};
+
+    /**
+     * See pianoKeyToLetterMapping. This structure is used when in NUMBERS mode.
+     *
+     * This could be combined with pianoKeyToLetterMapping by just making the
+     * values be objects with different handlers based on the mode that you're
+     * in.
+     */
+    this.pianoKeyToNumberMapping = {};
+
+    /**
+     * See pianoKeyToLetterMapping. This structure is used when in COMMANDS
+     * mode.
+     */
+    this.pianoKeyToCommandMapping = {};
+
+    this.formPianoKeyToLetterMapping();
+    this.formPianoKeyToNumberMapping();
+    this.formPianoKeyToCommandMapping();
+
     setInterval(() => {
       if (this.isTemporarilyHandlingIntervalsAndChords()) {
         this.handleKeyPress();
       }
     }, 16);
+  }
+
+  /**
+   * This just populates the key-mapping dictionary.
+   */
+  formPianoKeyToNumberMapping() {
+    this.pianoKeyToNumberMapping[51] = (vel, hasExceededVelocityThreshold) => {
+      if (hasExceededVelocityThreshold) robot.keyTap('\\');
+      else robot.keyTap('/');
+    };
+    this.pianoKeyToNumberMapping[63] = (vel, hasExceededVelocityThreshold) =>
+      robot.keyTap('\\', 'shift');
+    this.pianoKeyToNumberMapping[66] = (vel, hasExceededVelocityThreshold) => {
+      if (hasExceededVelocityThreshold) robot.keyTap(']', 'shift');
+      else robot.keyTap('[', 'shift');
+    };
+    this.pianoKeyToNumberMapping[68] = (vel, hasExceededVelocityThreshold) => {
+      if (hasExceededVelocityThreshold) robot.keyTap(']');
+      else robot.keyTap('[');
+    };
+    this.pianoKeyToNumberMapping[70] = (vel, hasExceededVelocityThreshold) => {
+      if (hasExceededVelocityThreshold) robot.keyTap('.');
+      else robot.keyTap(',');
+    };
+
+    const pianoKeyToNumberMap = {
+      43: '1',
+      44: ';',
+      45: '2',
+      47: '3',
+      48: '4',
+      50: '5',
+      60: '6',
+      62: '7',
+      64: '8',
+      65: '9',
+      67: '0',
+      69: '-',
+      71: '=',
+    };
+
+    _.forEach(pianoKeyToNumberMap, (number, pianoKeyNumber) => {
+      this.pianoKeyToNumberMapping[pianoKeyNumber] = (
+        vel,
+        hasExceededVelocityThreshold
+      ) =>
+        robot.keyTap(number, hasExceededVelocityThreshold ? 'shift' : 'none');
+    });
+  }
+
+  formPianoKeyToCommandMapping() {
+    this.pianoKeyToCommandMapping[43] = () => robot.keyTap('down');
+    this.pianoKeyToCommandMapping[44] = () => robot.keyTap('up');
+    this.pianoKeyToCommandMapping[64] = () => robot.keyTap('z', 'control');
+    this.pianoKeyToCommandMapping[65] = () => robot.keyTap('y', 'control');
+    this.pianoKeyToCommandMapping[48] = (vel, hasExceededVelocityThreshold) => {
+      if (hasExceededVelocityThreshold) {
+        robot.keyTap('backspace', ['control', 'shift']);
+      } else {
+        robot.keyTap('home');
+      }
+    };
+    this.pianoKeyToCommandMapping[49] = (vel, hasExceededVelocityThreshold) => {
+      if (hasExceededVelocityThreshold) robot.keyTap('backspace', 'control');
+      else robot.keyTap('left', 'control');
+    };
+    this.pianoKeyToCommandMapping[50] = (vel, hasExceededVelocityThreshold) => {
+      if (hasExceededVelocityThreshold) robot.keyTap('backspace');
+      else robot.keyTap('left');
+    };
+    this.pianoKeyToCommandMapping[60] = (vel, hasExceededVelocityThreshold) => {
+      if (hasExceededVelocityThreshold) robot.keyTap('delete');
+      else robot.keyTap('right');
+    };
+    this.pianoKeyToCommandMapping[61] = (vel, hasExceededVelocityThreshold) => {
+      if (hasExceededVelocityThreshold) robot.keyTap('delete', 'control');
+      else robot.keyTap('right', 'control');
+    };
+    this.pianoKeyToCommandMapping[62] = (vel, hasExceededVelocityThreshold) => {
+      if (hasExceededVelocityThreshold) {
+        robot.keyTap('delete', ['control', 'shift']);
+      } else {
+        robot.keyTap('end');
+      }
+    };
+  }
+
+  formPianoKeyToLetterMapping() {
+    this.pianoKeyToLetterMapping[42] = (vel, hasExceededVelocityThreshold) =>
+      robot.keyTap('space');
+    this.pianoKeyToLetterMapping[69] = (vel, hasExceededVelocityThreshold) =>
+      robot.keyTap('backspace');
+
+    const pianoKeyToLetterMap = {
+      43: 'L',
+      44: 'P',
+      45: 'R',
+      46: 'M',
+      47: 'N',
+      48: 'O',
+      49: 'C',
+      50: 'T',
+      51: 'W',
+      52: 'B',
+      53: 'K',
+      54: 'J',
+      55: 'Q',
+      56: 'X',
+      57: 'Z',
+      58: 'Y',
+      59: 'G',
+      60: 'E',
+      61: 'D',
+      62: 'A',
+      63: 'U',
+      64: 'I',
+      65: 'S',
+      66: 'F',
+      67: 'H',
+      68: 'V',
+    };
+
+    _.forEach(pianoKeyToLetterMap, (letter, pianoKeyNumber) => {
+      this.pianoKeyToLetterMapping[pianoKeyNumber] = (
+        vel,
+        hasExceededVelocityThreshold
+      ) => this.typeLetter(letter, hasExceededVelocityThreshold);
+    });
   }
 
   hasExceededVelocityThreshold = (data1, data2) => {
@@ -70,96 +229,11 @@ class KeyRecognizer {
       data1,
       data2
     );
-    const shiftIfExceededVelocity = exceededVelocityThreshold
-      ? 'shift'
-      : 'none';
+
     let handled = false;
-
-    if (data1 === 43) {
-      robot.keyTap('1', shiftIfExceededVelocity);
-      handled = true;
-    }
-
-    // ;:
-    if (data1 === 44) {
-      exceededVelocityThreshold
-        ? robot.keyTap(';', 'shift')
-        : robot.keyTap(';');
-      handled = true;
-    }
-    if (data1 === 45) {
-      robot.keyTap('2', shiftIfExceededVelocity);
-      handled = true;
-    }
-    if (data1 === 47) {
-      robot.keyTap('3', shiftIfExceededVelocity);
-      handled = true;
-    }
-    if (data1 === 48) {
-      robot.keyTap('4', shiftIfExceededVelocity);
-      handled = true;
-    }
-    if (data1 === 50) {
-      robot.keyTap('5', shiftIfExceededVelocity);
-      handled = true;
-    }
-    if (data1 === 51) {
-      exceededVelocityThreshold ? robot.keyTap('\\') : robot.keyTap('/');
-      handled = true;
-    }
-
-    if (data1 === 60) {
-      robot.keyTap('6', shiftIfExceededVelocity);
-      handled = true;
-    }
-    if (data1 === 62) {
-      robot.keyTap('7', shiftIfExceededVelocity);
-      handled = true;
-    }
-
-    // |
-    if (data1 === 63) {
-      robot.keyTap('\\', 'shift');
-      handled = true;
-    }
-    if (data1 === 64) {
-      robot.keyTap('8', shiftIfExceededVelocity);
-      handled = true;
-    }
-    if (data1 === 65) {
-      robot.keyTap('9', shiftIfExceededVelocity);
-      handled = true;
-    }
-
-    // { }
-    if (data1 === 66) {
-      exceededVelocityThreshold
-        ? robot.keyTap(']', 'shift')
-        : robot.keyTap('[', 'shift');
-      handled = true;
-    }
-    if (data1 === 67) {
-      robot.keyTap('0', shiftIfExceededVelocity);
-      handled = true;
-    }
-    if (data1 === 68) {
-      exceededVelocityThreshold ? robot.keyTap(']') : robot.keyTap('[');
-      handled = true;
-    }
-    if (data1 === 69) {
-      robot.keyTap('-', shiftIfExceededVelocity);
-      handled = true;
-    }
-
-    // < >
-    if (data1 === 70) {
-      exceededVelocityThreshold
-        ? robot.keyTap('.', 'shift')
-        : robot.keyTap(',', 'shift');
-      handled = true;
-    }
-    if (data1 === 71) {
-      robot.keyTap('=', shiftIfExceededVelocity);
+    if (data1 in this.pianoKeyToNumberMapping) {
+      const handlerFn = this.pianoKeyToNumberMapping[data1];
+      handlerFn(data2, exceededVelocityThreshold);
       handled = true;
     }
 
@@ -177,235 +251,23 @@ class KeyRecognizer {
       data2
     );
 
-    if (data1 === 43) {
-      robot.keyTap('down');
+    if (data1 in this.pianoKeyToCommandMapping) {
+      const handlerFn = this.pianoKeyToCommandMapping[data1];
+      handlerFn(data2, exceededVelocityThreshold);
       return true;
     }
-
-    if (data1 === 44) {
-      robot.keyTap('up');
-      return true;
-    }
-
-    if (data1 === 48) {
-      if (exceededVelocityThreshold) {
-        robot.keyTap('backspace', ['control', 'shift']);
-      } else {
-        robot.keyTap('home');
-      }
-      return true;
-    }
-
-    if (data1 === 49) {
-      if (exceededVelocityThreshold) {
-        robot.keyTap('backspace', 'control');
-      } else {
-        robot.keyTap('left', 'control');
-      }
-      return true;
-    }
-
-    if (data1 === 50) {
-      if (exceededVelocityThreshold) {
-        robot.keyTap('backspace');
-      } else {
-        robot.keyTap('left');
-      }
-      return true;
-    }
-
-    if (data1 === 60) {
-      if (exceededVelocityThreshold) {
-        robot.keyTap('delete');
-      } else {
-        robot.keyTap('right');
-      }
-      return true;
-    }
-
-    if (data1 === 61) {
-      if (exceededVelocityThreshold) {
-        robot.keyTap('delete', 'control');
-      } else {
-        robot.keyTap('right', 'control');
-      }
-      return true;
-    }
-
-    if (data1 === 62) {
-      if (exceededVelocityThreshold) {
-        robot.keyTap('delete', ['control', 'shift']);
-      } else {
-        robot.keyTap('end');
-      }
-      return true;
-    }
-
-    if (data1 === 64) {
-      robot.keyTap('z', 'control');
-      return true;
-    }
-
-    if (data1 === 65) {
-      robot.keyTap('y', 'control');
-      return true;
-    }
-
-    // // The "G" key will be "race again" in Typeracer (ctrl+alt+K).
-    // if (data1 === 67) {
-    //   // Scroll to the top of the page
-    //   robot.keyTap("home");
-
-    //   // Go to the next Typeracer race
-    //   robot.keyTap("k", ["control", "alt"]);
-
-    //   // Make sure we're in Letters Mode.
-    //   this.setMode(Modes.LETTERS);
-    //   return true;
-    // }
-
     return false;
   };
 
   handleLetterInput = (data1, data2) => {
-    if (data1 === 42) {
-      robot.keyTap('space');
-      return true;
-    }
+    const exceededVelocityThreshold = this.hasExceededVelocityThreshold(
+      data1,
+      data2
+    );
 
-    if (data1 === 43) {
-      this.typeLetter('L', data2);
-      return true;
-    }
-
-    if (data1 === 44) {
-      this.typeLetter('P', data2);
-      return true;
-    }
-
-    if (data1 === 45) {
-      this.typeLetter('R', data2);
-      return true;
-    }
-
-    if (data1 === 46) {
-      this.typeLetter('M', data2);
-      return true;
-    }
-
-    if (data1 === 47) {
-      this.typeLetter('N', data2);
-      return true;
-    }
-
-    if (data1 === 48) {
-      this.typeLetter('O', data2);
-      return true;
-    }
-
-    if (data1 === 49) {
-      this.typeLetter('C', data2);
-      return true;
-    }
-
-    if (data1 === 50) {
-      this.typeLetter('T', data2);
-      return true;
-    }
-
-    if (data1 === 51) {
-      this.typeLetter('W', data2);
-      return true;
-    }
-
-    if (data1 === 52) {
-      this.typeLetter('B', data2);
-      return true;
-    }
-
-    if (data1 === 53) {
-      this.typeLetter('K', data2);
-      return true;
-    }
-
-    if (data1 === 54) {
-      this.typeLetter('J', data2);
-      return true;
-    }
-
-    if (data1 === 55) {
-      this.typeLetter('Q', data2);
-      return true;
-    }
-
-    if (data1 === 56) {
-      this.typeLetter('X', data2);
-      return true;
-    }
-
-    if (data1 === 57) {
-      this.typeLetter('Z', data2);
-      return true;
-    }
-
-    if (data1 === 58) {
-      this.typeLetter('Y', data2);
-      return true;
-    }
-
-    if (data1 === 59) {
-      this.typeLetter('G', data2);
-      return true;
-    }
-
-    if (data1 === 60) {
-      this.typeLetter('E', data2);
-      return true;
-    }
-
-    if (data1 === 61) {
-      this.typeLetter('D', data2);
-      return true;
-    }
-
-    if (data1 === 62) {
-      this.typeLetter('A', data2);
-      return true;
-    }
-
-    if (data1 === 63) {
-      this.typeLetter('U', data2);
-      return true;
-    }
-
-    if (data1 === 64) {
-      this.typeLetter('I', data2);
-      return true;
-    }
-
-    if (data1 === 65) {
-      this.typeLetter('S', data2);
-      return true;
-    }
-
-    if (data1 === 66) {
-      this.typeLetter('F', data2);
-      return true;
-    }
-
-    if (data1 === 67) {
-      this.typeLetter('H', data2);
-      return true;
-    }
-
-    if (data1 === 68) {
-      this.typeLetter('V', data2);
-      return true;
-    }
-
-    // The 'A' key
-    if (data1 === 69) {
-      robot.keyTap('backspace');
+    if (data1 in this.pianoKeyToLetterMapping) {
+      const handlerFn = this.pianoKeyToLetterMapping[data1];
+      handlerFn(data2, exceededVelocityThreshold);
       return true;
     }
 
@@ -544,7 +406,6 @@ class KeyRecognizer {
 
     // An interval of 24 is two whole octaves, which is where the pinkies naturally rest.
     if (interval === 1 || interval === 2 || interval === 24) {
-      // this.typeLetter(' ');
       robot.keyTap('space');
       // console.log('SPACE PRESSED');
       return true;
@@ -639,8 +500,8 @@ class KeyRecognizer {
     return handled;
   }
 
-  typeLetter(letter, velocity = 0) {
-    if (velocity > this.velocityThreshold) {
+  typeLetter(letter, hasExceededVelocityThreshold) {
+    if (hasExceededVelocityThreshold) {
       letter = letter.toUpperCase();
     } else {
       letter = letter.toLowerCase();
