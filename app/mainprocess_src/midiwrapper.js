@@ -8,11 +8,11 @@ class MidiWrapper {
     this.keyRecognizer = keyRecognizer;
 
     // Count the available input ports.
-    const numPorts =  this.input.getPortCount();
+    const numPorts = this.input.getPortCount();
 
     console.log('numPorts: ' + JSON.stringify(numPorts));
 
-    const portToGet = 1;
+    const portToGet = 0;
 
     // Get the name of a specified input port.
     const portName = this.input.getPortName(portToGet);
@@ -42,7 +42,7 @@ class MidiWrapper {
     // http://computermusicresource.com/MIDI.Commands.html
     const [status, data1, data2] = message;
     this.keyRecognizer.processMessage(status, data1, data2, deltaTime);
-  }
+  };
 
   dispose() {
     this.input.closePort();

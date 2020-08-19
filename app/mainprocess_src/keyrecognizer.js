@@ -11,15 +11,29 @@ const Modes = {
 
 class KeyRecognizer {
   constructor() {
-    this.debounceTime = 50;
+    this.intervalModeKeyNumber = 41;
+
     /**
      * Keys: the "data1" property
      * Values: KeyData objects
+     *
+     * A key/value pair is added when a note is pressed and removed when the
+     * note is released.
      * @type {Object<number, KeyData>}
      */
     this.keys = {};
 
-    this.velocityThreshold = 90;
+    /**
+     * History:
+     * 3/29/19 - changing from 90 to 80 since it's too high
+     * 3/30/19 - changing from 80 to 85 since it's too low
+     */
+    this.velocityThreshold = 85;
+
+    // This gets added to velocityThreshold for some keys. This is only intended
+    // for use for keys where you either end up naturally mashing that key or
+    // the key itself is broken.
+    this.additionalVelocityThreshold = 10;
 
     /**
      * When true, we are only in Numbers Mode for a single keypress. After that
@@ -29,24 +43,36 @@ class KeyRecognizer {
 
     this.mode = Modes.LETTERS;
 
-    // We have to debounce this because we don't want a third to be interpreted
-    // as an interval handler if one millisecond later we're going to get a full
-    // chord.
-    this.debouncedHandleKeyPress = _.debounce(
-      this.handleKeyPress.bind(this),
-      this.debounceTime
-    );
-
     this.handlers = {
       [Modes.LETTERS]: this.handleLetterInput,
       [Modes.COMMANDS]: this.handleCommandInput,
       [Modes.NUMBERS]: this.handleNumberInput,
     };
+
+    setInterval(() => {
+      if (this.isTemporarilyHandlingIntervalsAndChords()) {
+        this.handleKeyPress();
+      }
+    }, 16);
   }
 
+  hasExceededVelocityThreshold = (data1, data2) => {
+    let threshold = this.velocityThreshold;
+    if (data1 === 47) {
+      threshold += this.additionalVelocityThreshold;
+    }
+
+    return data2 > threshold;
+  };
+
   handleNumberInput = (data1, data2) => {
-    const exceededVelocityThreshold = data2 > this.velocityThreshold;
-    const shiftIfExceededVelocity = exceededVelocityThreshold ? "shift":"none";
+    const exceededVelocityThreshold = this.hasExceededVelocityThreshold(
+      data1,
+      data2
+    );
+    const shiftIfExceededVelocity = exceededVelocityThreshold
+      ? 'shift'
+      : 'none';
     let handled = false;
 
     if (data1 === 43) {
@@ -56,7 +82,9 @@ class KeyRecognizer {
 
     // ;:
     if (data1 === 44) {
-      exceededVelocityThreshold ? robot.keyTap(';', 'shift') : robot.keyTap(';');
+      exceededVelocityThreshold
+        ? robot.keyTap(';', 'shift')
+        : robot.keyTap(';');
       handled = true;
     }
     if (data1 === 45) {
@@ -105,7 +133,9 @@ class KeyRecognizer {
 
     // { }
     if (data1 === 66) {
-      exceededVelocityThreshold ? robot.keyTap(']', 'shift') : robot.keyTap('[', 'shift');
+      exceededVelocityThreshold
+        ? robot.keyTap(']', 'shift')
+        : robot.keyTap('[', 'shift');
       handled = true;
     }
     if (data1 === 67) {
@@ -123,7 +153,9 @@ class KeyRecognizer {
 
     // < >
     if (data1 === 70) {
-      exceededVelocityThreshold ? robot.keyTap('.', 'shift') : robot.keyTap(',', 'shift');
+      exceededVelocityThreshold
+        ? robot.keyTap('.', 'shift')
+        : robot.keyTap(',', 'shift');
       handled = true;
     }
     if (data1 === 71) {
@@ -140,7 +172,10 @@ class KeyRecognizer {
   };
 
   handleCommandInput = (data1, data2) => {
-    const exceededVelocityThreshold = data2 > this.velocityThreshold;
+    const exceededVelocityThreshold = this.hasExceededVelocityThreshold(
+      data1,
+      data2
+    );
 
     if (data1 === 43) {
       robot.keyTap('down');
@@ -215,6 +250,19 @@ class KeyRecognizer {
       robot.keyTap('y', 'control');
       return true;
     }
+
+    // // The "G" key will be "race again" in Typeracer (ctrl+alt+K).
+    // if (data1 === 67) {
+    //   // Scroll to the top of the page
+    //   robot.keyTap("home");
+
+    //   // Go to the next Typeracer race
+    //   robot.keyTap("k", ["control", "alt"]);
+
+    //   // Make sure we're in Letters Mode.
+    //   this.setMode(Modes.LETTERS);
+    //   return true;
+    // }
 
     return false;
   };
@@ -355,6 +403,12 @@ class KeyRecognizer {
       return true;
     }
 
+    // The 'A' key
+    if (data1 === 69) {
+      robot.keyTap('backspace');
+      return true;
+    }
+
     return false;
   };
 
@@ -376,21 +430,45 @@ class KeyRecognizer {
    * chord/interval.
    * @return {Array<KeyData>}
    */
-  getChordKeys(newestKeyData) {
+  getChordKeys() {
     const curTime = Date.now();
 
-    // Because we're debouncing the handler for this, our latest key press may
-    // be up to debounce_time in the past.
-    const NUM_MS_FOR_CHORD = 25;
+    if (this.isTemporarilyHandlingIntervalsAndChords()) {
+      // The head of the array will be the oldest key.
+      //
+      // We need to wait a long enough time after the last key before trying to
+      // handle them as an interval or chord. That way, pressing C-E isn't
+      // interpreted as a major third when a G would follow shortly thereafter
+      // (thus making it a major triad),
+      const sortedKeys = _.orderBy(this.keys, 'timePressed');
+      const lastKeyPressed = _.last(sortedKeys);
 
-    const debounceAccommodationTime = curTime - newestKeyData.timePressed;
+      if (
+        !_.isNil(lastKeyPressed) &&
+        curTime < lastKeyPressed.timePressed + 25
+      ) {
+        return [];
+      }
+      // return _.filter(sortedKeys, (keyData, index) => {
+      //   const onLastKey = index === _.size(sortedKeys);
+      //   const waitTime = onLastKey - 1 ? 50 : 0;
+      //   return curTime >= keyData.timePressed + waitTime && !keyData.handled;
+      // });
+    }
 
-    return _.filter(
-      this.keys,
-      (keyData) =>
-        keyData.timePressed >=
-        curTime - NUM_MS_FOR_CHORD - debounceAccommodationTime
-    );
+    return _.filter(this.keys, (keyData, index) => !keyData.handled);
+  }
+
+  getOldestKeyHeld() {
+    // The head of the array will be the oldest key
+    const sortedKeys = _.orderBy(this.keys, 'timePressed');
+
+    const numKeys = _.size(sortedKeys);
+    if (numKeys < 2) {
+      return null;
+    }
+
+    return _.head(sortedKeys);
   }
 
   getSecondMostRecentKeyHeld() {
@@ -458,7 +536,9 @@ class KeyRecognizer {
       return false;
     }
 
-    const exceededVelocityThreshold = chordKeys[0].data2 > this.velocityThreshold || chordKeys[1].data2 > this.velocityThreshold;
+    const exceededVelocityThreshold =
+      chordKeys[0].data2 > this.velocityThreshold ||
+      chordKeys[1].data2 > this.velocityThreshold;
 
     const interval = chordKeys[0].getIntervalTo(chordKeys[1]);
 
@@ -541,15 +621,22 @@ class KeyRecognizer {
   }
 
   handleChord(chordKeys) {
+    let handled = false;
     if (this.handleTriadQuality(chordKeys)) {
-      return true;
+      handled = true;
     }
 
-    if (this.handleInterval(chordKeys)) {
-      return true;
+    if (!handled && this.handleInterval(chordKeys)) {
+      handled = true;
     }
 
-    return false;
+    if (handled) {
+      _.forEach(chordKeys, (keyData) => {
+        keyData.handled = handled;
+      });
+    }
+
+    return handled;
   }
 
   typeLetter(letter, velocity = 0) {
@@ -569,24 +656,35 @@ class KeyRecognizer {
       return false;
     }
 
-    const data1 = chordKeys[0].data1;
-    const data2 = chordKeys[0].data2;
+    const { data1, data2, handled: wasAlreadyHandled } = chordKeys[0];
 
-    return this.handlers[this.mode](data1, data2);
+    // Don't handle one of these twice.
+    if (wasAlreadyHandled) {
+      return true;
+    }
+
+    const handled = this.handlers[this.mode](data1, data2);
+    chordKeys[0].handled = handled;
+    return handled;
   }
 
-  handleKeyPress(newestKeyData) {
+  isTemporarilyHandlingIntervalsAndChords() {
+    return !_.isNil(this.keys[this.intervalModeKeyNumber]);
+  }
+
+  handleKeyPress() {
     // Figure out how much time passed between the last key that was held and
     // this one so that we can figure out if it should be part of the chord.
 
-    const chordKeys = this.getChordKeys(newestKeyData);
+    const chordKeys = this.getChordKeys();
 
     // this.printAllKeysPressed();
-    // console.log('chordKeys: ' + JSON.stringify(chordKeys, null, 2));
+    // console.log("chordKeys: " + JSON.stringify(chordKeys, null, 2));
 
     // TODO: check for chords / intervals / keys and run their handlers
     // accordingly based on the mode we're in
-    if (this.handleChord(chordKeys)) {
+    if (this.isTemporarilyHandlingIntervalsAndChords()) {
+      this.handleChord(chordKeys);
       return;
     }
 
@@ -594,7 +692,10 @@ class KeyRecognizer {
     // collected as individual keys.
     const unhandled = [];
     if (_.size(chordKeys) > 1) {
-      console.log('Interpreting multiple chord keys as single keys chordKeys: ' + JSON.stringify(chordKeys, null, 2));
+      console.log(
+        'Interpreting multiple chord keys as single keys chordKeys: ' +
+          JSON.stringify(chordKeys, null, 2)
+      );
     }
 
     // Play them back from oldest to newest
@@ -604,7 +705,7 @@ class KeyRecognizer {
       if (!handled) {
         unhandled.push(chordKey);
       }
-    })
+    });
     // if (this.handleNonChord(chordKeys)) {
     //   return;
     // }
@@ -626,6 +727,11 @@ class KeyRecognizer {
 
   addKeyData(keyData) {
     this.keys[keyData.data1] = keyData;
+
+    // Mark it as handled immediately so that we don't try handling it twice.
+    if (keyData.data1 === this.intervalModeKeyNumber) {
+      keyData.handled = true;
+    }
   }
 
   processMessage(status, data1, data2, deltaTime) {
@@ -633,12 +739,10 @@ class KeyRecognizer {
       const keyData = new KeyData(data1, data2);
       this.addKeyData(keyData);
 
-      // console.log(`You pressed: ${keyData}`);
-      // this.printAllKeysPressed();
-
-      this.debouncedHandleKeyPress(keyData);
+      this.handleKeyPress();
     } else if (status === MidiConstants.NOTE_OFF) {
       // console.log(`You let go of: ${data1}`);
+
       delete this.keys[data1];
 
       // this.printAllKeysPressed();
