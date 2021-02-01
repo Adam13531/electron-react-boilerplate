@@ -1,4 +1,5 @@
 import midi from 'midi';
+import _ from 'lodash';
 
 class MidiWrapper {
   constructor(keyRecognizer) {
@@ -45,8 +46,10 @@ class MidiWrapper {
   };
 
   dispose() {
-    this.input.closePort();
-    this.input = null;
+    if (!_.isNil(this.input)) {
+      this.input.closePort();
+      this.input = null;
+    }
   }
 }
 
