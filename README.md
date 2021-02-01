@@ -25,7 +25,7 @@ As mentioned earlier, there was [a design document](https://goo.gl/U1HnMu) behin
 
 ## Shortcomings
 
-Because of how little time I spent coding this, there are many pieces of the code that could be much better. The largest such piece is the surprising use of Electron. I'd originally intended on having UI and overlays to make it easier to learn the system, but I never got around to doing that, and I ended up leaving Electron in even though it serves no purpose right now.
+Because of how little time I spent coding this, there are many pieces of the code that could be much better. I'd also intended on having UI and overlays to make it easier to learn the system, but I never got around to doing that.
 
 ## How do I use this?
 
@@ -156,21 +156,3 @@ Just open `./app/mainprocess_src/midiwrapper.js` and try changing the MIDI port 
 ### Can't find MIDI device on Windows
 
 My USB has been flaky, so if Device Manager doesn't show the Impulse under "Other devices", then try a different port or not having an extension cord.
-
-### Error: Could not locate the bindings file. Tried: […]
-
-From the main repo:
-
-- `cd app`
-- `yarn run electron-rebuild`
-- `cd ..`
-- `yarn run dev`
-
-### Can't find robotjs
-
-From the main repo:
-
-- `cd app`
-- `yarn`
-- `cd ..`
-- `yarn run dev`
